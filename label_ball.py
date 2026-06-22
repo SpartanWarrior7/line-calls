@@ -19,6 +19,10 @@ of it.
 ------------------------------------------------------------------------------
 USAGE
 ------------------------------------------------------------------------------
+  # EASIEST: no typing. Double-click "Label Ball.bat", or just run with no args,
+  # to open a big-button home screen (pick a video / review, then click the ball).
+  python label_ball.py
+
   # label a clip from scratch:
   python label_ball.py --video rally1.mp4
   python label_ball.py --video rally1.mp4 --scale 0.75 --loupe-zoom 6
@@ -292,6 +296,160 @@ def get_screen_size(default=(1920, 1080)):
     return default
 
 
+# Plain-language help shown on the home screen (kid-friendly, no jargon).
+WELCOME_HELP = [
+    ("h", "The goal"),
+    ("t", "You'll watch a tennis video one picture (frame) at a time."),
+    ("t", "Your job is to show the computer exactly where the ball is."),
+    ("sp", ""),
+    ("h", "Labeling a new video"),
+    ("t", "Click right on the ball. It marks the spot and jumps to the next picture."),
+    ("t", "Can't see the ball? Press  N  (it's hidden or off the screen)."),
+    ("t", "Want to go back one picture? Press  A ."),
+    ("t", "Need to move the mark a tiny bit? Use the arrow keys."),
+    ("sp", ""),
+    ("h", "Fixing the computer's guesses"),
+    ("t", "The computer's guess shows up YELLOW."),
+    ("t", "If the guess is right, press  C  to keep it (it turns RED)."),
+    ("t", "If the guess is wrong, just click the correct spot to fix it."),
+    ("t", "Press  U  to jump to the next picture that still needs checking."),
+    ("sp", ""),
+    ("h", "Finishing up"),
+    ("t", "Your work saves by itself. Press  Q  any time to save and stop."),
+    ("t", "Inside the labeler, press  M  for the full menu and more help."),
+]
+
+
+def run_welcome():
+    """Big-button home screen so nobody has to type a command.
+
+    Returns one of "label", "review", or "quit". Falls back to a tiny console
+    menu if OpenCV has no display available.
+    """
+    if cv2 is None:
+        print("\n=== Ball Labeler ===")
+        print("  1) Label a new video")
+        print("  2) Fix the computer's guesses")
+        print("  3) Quit")
+        try:
+            ans = input("Type 1, 2, or 3 and press Enter: ").strip()
+        except EOFError:
+            return "quit"
+        return {"1": "label", "2": "review", "3": "quit"}.get(ans, "quit")
+
+    win = "Ball Labeler"
+    W, H = 900, 620
+    cv2.namedWindow(win, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(win, W, H)
+    FONT, LINE = cv2.FONT_HERSHEY_SIMPLEX, cv2.LINE_AA
+    state = {"page": "home", "result": None, "rects": []}
+
+    def on_mouse(event, x, y, flags, param):
+        if event != cv2.EVENT_LBUTTONDOWN:
+            return
+        for (x0, y0, x1, y1, action) in state["rects"]:
+            if x0 <= x <= x1 and y0 <= y <= y1:
+                action()
+                break
+
+    cv2.setMouseCallback(win, on_mouse)
+
+    def choose(mode):
+        state["result"] = mode
+
+    def go(page):
+        state["page"] = page
+
+    def render_home():
+        state["rects"] = []
+        canvas = np.full((H, W, 3), 30, np.uint8)
+        cv2.rectangle(canvas, (0, 0), (W, 112), (60, 45, 35), -1)
+        cv2.putText(canvas, "Ball Labeler", (40, 66), FONT, 1.6, (255, 255, 255), 3, LINE)
+        cv2.putText(canvas, "Help teach the computer to find the tennis ball.",
+                    (42, 98), FONT, 0.62, (210, 210, 210), 1, LINE)
+
+        def big_button(y, title, subtitle, color, action):
+            x0, y0, x1, y1 = 40, y, W - 40, y + 96
+            cv2.rectangle(canvas, (x0, y0), (x1, y1), color, -1)
+            cv2.rectangle(canvas, (x0, y0), (x1, y1), (235, 235, 235), 2)
+            cv2.putText(canvas, title, (x0 + 28, y0 + 44), FONT, 0.95,
+                        (255, 255, 255), 2, LINE)
+            cv2.putText(canvas, subtitle, (x0 + 28, y0 + 76), FONT, 0.55,
+                        (225, 225, 225), 1, LINE)
+            state["rects"].append((x0, y0, x1, y1, action))
+
+        big_button(148, "1.  Label a new video",
+                   "Mark where the ball is in each picture.",
+                   (120, 80, 40), lambda: choose("label"))
+        big_button(258, "2.  Fix the computer's guesses",
+                   "Check the computer's work and fix any mistakes.",
+                   (40, 90, 120), lambda: choose("review"))
+        big_button(368, "3.  How do I use this?",
+                   "A quick guide to the buttons.",
+                   (60, 60, 60), lambda: go("help"))
+
+        x0, y0, x1, y1 = 40, 478, W - 40, 548
+        cv2.rectangle(canvas, (x0, y0), (x1, y1), (45, 45, 45), -1)
+        cv2.rectangle(canvas, (x0, y0), (x1, y1), (150, 150, 150), 1)
+        cv2.putText(canvas, "Quit", (x0 + 28, y0 + 46), FONT, 0.8,
+                    (210, 180, 180), 2, LINE)
+        state["rects"].append((x0, y0, x1, y1, lambda: choose("quit")))
+
+        cv2.putText(canvas, "Tip: you can also press 1, 2, 3, or Q on the keyboard.",
+                    (42, H - 22), FONT, 0.5, (150, 150, 150), 1, LINE)
+        cv2.imshow(win, canvas)
+
+    def render_help():
+        state["rects"] = []
+        canvas = np.full((H, W, 3), 28, np.uint8)
+        cv2.putText(canvas, "How to use Ball Labeler", (40, 58), FONT, 1.0,
+                    (255, 255, 255), 2, LINE)
+        y = 104
+        for kind, text in WELCOME_HELP:
+            if kind == "sp":
+                y += 14
+                continue
+            if kind == "h":
+                cv2.putText(canvas, text, (40, y), FONT, 0.6, (150, 200, 255), 1, LINE)
+            else:
+                cv2.putText(canvas, "  " + text, (40, y), FONT, 0.5,
+                            (225, 225, 225), 1, LINE)
+            y += 28
+        x0, y0, x1, y1 = 40, H - 68, 260, H - 22
+        cv2.rectangle(canvas, (x0, y0), (x1, y1), (58, 58, 58), -1)
+        cv2.rectangle(canvas, (x0, y0), (x1, y1), (255, 220, 150), 1)
+        cv2.putText(canvas, "Back", (x0 + 22, y1 - 15), FONT, 0.62,
+                    (255, 220, 150), 1, LINE)
+        state["rects"].append((x0, y0, x1, y1, lambda: go("home")))
+        cv2.imshow(win, canvas)
+
+    while state["result"] is None:
+        if state["page"] == "help":
+            render_help()
+        else:
+            render_home()
+        key = cv2.waitKey(20) & 0xFF
+        if state["page"] == "help":
+            if key in (27, ord("q"), ord("b")):
+                go("home")
+        else:
+            if key == ord("1"):
+                choose("label")
+            elif key == ord("2"):
+                choose("review")
+            elif key in (ord("3"), ord("h")):
+                go("help")
+            elif key in (ord("q"), 27):
+                choose("quit")
+        if cv2.getWindowProperty(win, cv2.WND_PROP_VISIBLE) < 1:
+            state["result"] = "quit"
+            break
+
+    cv2.destroyWindow(win)
+    cv2.waitKey(1)
+    return state["result"]
+
+
 def run_gui(frames_dir, n, width, height, csv_path, progress_path,
             scale, loupe_zoom, ext=IMG_EXT, review=False, fullscreen=False,
             export_path=None):
@@ -399,9 +557,9 @@ def run_gui(frames_dir, n, width, height, csv_path, progress_path,
             close_menu()
 
     if review:
-        win = "label_ball REVIEW - c/Enter=confirm | click=fix | u=next unreviewed | q=quit"
+        win = "Ball Labeler  -  Check the computer's guesses   (C = keep, click = fix, U = next, Q = save & quit)"
     else:
-        win = "label_ball - click the ball | n=not visible | s=save | q=quit"
+        win = "Ball Labeler  -  Click the ball   (N = can't see it, A = back, M = menu, Q = save & quit)"
 
     def to_orig(dx, dy):
         # dx,dy are display coords within the FULL canvas; subtract the image's
@@ -613,20 +771,19 @@ def run_gui(frames_dir, n, width, height, csv_path, progress_path,
         if not state["fullscreen"] and state["win_size"] != (cw, ch):
             cv2.resizeWindow(win, cw, ch)
             state["win_size"] = (cw, ch)
-        this_state = ('visible' if (labelled[i] and vis[i])
-                      else ('NOT VISIBLE' if labelled[i] else 'unlabelled'))
+        friendly_state = ('Ball: visible' if (labelled[i] and vis[i])
+                          else ('Ball: not visible' if labelled[i]
+                                else 'Ball: not marked yet'))
         if review:
             done = int(reviewed.sum())
-            bar1 = f"REVIEW  {i+1}/{n}   reviewed {done}/{n}   {this_state}"
-            bar2 = ("c/Enter=confirm  L-click=fix+next  R-click or /=fix  "
-                    "arrows=nudge 1px  a/d=prev/next  n/space=not visible  "
-                    "u=next unreviewed  f=fullscreen  m=settings  s=save  q=quit")
+            bar1 = f"Checking picture {i+1} of {n}     Done {done}/{n}     {friendly_state}"
+            bar2 = ("C = guess looks right (keep it)    Click = fix it    "
+                    "N = can't see ball    U = next to check    M = help/menu    Q = save & quit")
         else:
             done = int(labelled.sum())
-            bar1 = f"{i+1}/{n}   labelled {done}/{n}   {this_state}"
-            bar2 = ("L-click=set+next  R-click or /=set  arrows=nudge 1px  "
-                    "a/d=prev/next  n/space=not visible  u=unlabelled  "
-                    "z=clear  f=fullscreen  m=settings  s=save  q=quit")
+            bar1 = f"Picture {i+1} of {n}     Done {done}/{n}     {friendly_state}"
+            bar2 = ("Click the ball = mark it & go next    N = can't see ball    "
+                    "A = back    M = help/menu    Q = save & quit")
         cv2.putText(canvas, bar1, (10, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
                     (255, 255, 255), 1, cv2.LINE_AA)
         cv2.putText(canvas, bar2, (10, 46), cv2.FONT_HERSHEY_SIMPLEX, 0.42,
@@ -862,6 +1019,78 @@ def run_gui(frames_dir, n, width, height, csv_path, progress_path,
 # CLI
 # ----------------------------------------------------------------------------
 
+def run_one_session(video, review, review_csv, args):
+    """Prepare frames for one clip and open the labeling window.
+
+    Shared by the command-line path and the click-only home screen. Prints
+    friendly messages and returns quietly on problems instead of exiting, so the
+    home screen can loop back to its menu.
+    """
+    if not os.path.exists(video):
+        print(f"  Couldn't find that video: {video}")
+        return
+
+    stem = os.path.splitext(os.path.basename(video))[0]
+    if review:
+        out_csv = os.path.abspath(review_csv)  # overwrite the model CSV in place
+    else:
+        out_csv = args.out or os.path.join(os.path.dirname(os.path.abspath(video)),
+                                           f"{stem}_ball.csv")
+    frames_dir = args.frames_dir or os.path.join(
+        os.path.dirname(os.path.abspath(video)), f"{stem}_frames")
+    progress_path = out_csv + ".progress.json"
+    export_path = os.path.join(os.path.dirname(os.path.abspath(video)),
+                               f"{stem}-labeled.csv")
+
+    print(f"Getting the video ready: {video}")
+    n, width, height = extract_frames(video, frames_dir)
+    if n == 0:
+        print("  Couldn't read any pictures from that video. Try a different file "
+              "(an .mp4 usually works best).")
+        return
+    print(f"  {n} pictures, {width}x{height}")
+
+    if review:
+        _, _, _, present = load_labels(out_csv, n, return_present=True)
+        rows = int(present.sum())
+        print(f"  The computer made a guess on {rows} of {n} pictures.")
+        if rows < n:
+            print("  Note: some pictures have no guess yet and will show as "
+                  "'not marked yet'. Make sure the video and the guesses go together.")
+
+    run_gui(frames_dir, n, width, height, out_csv, progress_path,
+            args.scale, args.loupe_zoom, review=review, fullscreen=args.fullscreen,
+            export_path=export_path)
+
+    if args.dataset_root:
+        rally = args.rally or stem
+        dv, dc = place_in_dataset(video, out_csv, args.dataset_root,
+                                  args.split, args.match, rally)
+        print(f"Placed in dataset:\n  {dv}\n  {dc}")
+
+
+def welcome_loop(args):
+    """No-typing home screen: pick an action, do it, then come back here."""
+    while True:
+        choice = run_welcome()
+        if choice == "quit":
+            print("All done. Bye!")
+            return
+        if choice == "label":
+            video = args.video or pick_video_dialog()
+            if not video:
+                continue  # cancelled the file picker -> back to the menu
+            run_one_session(video, False, None, args)
+        elif choice == "review":
+            review_csv = args.csv or pick_csv_dialog()
+            if not review_csv or not os.path.exists(review_csv):
+                continue
+            video = args.video or pick_video_dialog()
+            if not video:
+                continue
+            run_one_session(video, True, review_csv, args)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description="Click-to-label ball positions for TrackNetV3.")
     p.add_argument("--video", default=None, help="Path to the (trimmed) rally clip.")
@@ -888,6 +1117,12 @@ def main(argv=None):
                    help="Rally name for dataset placement (default: video stem).")
     args = p.parse_args(argv)
 
+    # No options given (e.g. double-clicked the launcher): open the easy,
+    # click-only home screen and loop there until the user quits.
+    if not args.video and not args.review and not args.csv:
+        welcome_loop(args)
+        return
+
     review = args.review
     review_csv = None
 
@@ -906,46 +1141,11 @@ def main(argv=None):
         video = args.video
 
     if not video:
-        p.error("--video is required (or use --review to pick one).")
+        p.error("--video is required (or run with no options for the easy menu).")
     if not os.path.exists(video):
         p.error(f"Video not found: {video}")
 
-    stem = os.path.splitext(os.path.basename(video))[0]
-    if review:
-        out_csv = os.path.abspath(review_csv)  # overwrite the model CSV in place
-    else:
-        out_csv = args.out or os.path.join(os.path.dirname(os.path.abspath(video)),
-                                           f"{stem}_ball.csv")
-    frames_dir = args.frames_dir or os.path.join(
-        os.path.dirname(os.path.abspath(video)), f"{stem}_frames")
-    progress_path = out_csv + ".progress.json"
-    export_path = os.path.join(os.path.dirname(os.path.abspath(video)),
-                               f"{stem}-labeled.csv")
-
-    print(f"Extracting frames from {video} -> {frames_dir}")
-    n, width, height = extract_frames(video, frames_dir)
-    if n == 0:
-        p.error("No frames decoded - is the video readable? (try converting with ffmpeg)")
-    print(f"  {n} frames, {width}x{height}")
-
-    if review:
-        _, _, _, present = load_labels(out_csv, n, return_present=True)
-        rows = int(present.sum())
-        print(f"  model CSV covers {rows} of {n} video frames.")
-        if rows < n:
-            print("  WARNING: CSV has fewer rows than the video - make sure the CSV "
-                  "and video are the same clip. Frames with no prediction show as "
-                  "'unlabelled'.")
-
-    run_gui(frames_dir, n, width, height, out_csv, progress_path,
-            args.scale, args.loupe_zoom, review=review, fullscreen=args.fullscreen,
-            export_path=export_path)
-
-    if args.dataset_root:
-        rally = args.rally or stem
-        dv, dc = place_in_dataset(video, out_csv, args.dataset_root,
-                                  args.split, args.match, rally)
-        print(f"Placed in dataset:\n  {dv}\n  {dc}")
+    run_one_session(video, review, review_csv, args)
 
 
 if __name__ == "__main__":

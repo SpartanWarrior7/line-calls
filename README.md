@@ -120,6 +120,18 @@ Step by step:
 clicking where the ball is. It writes the CSV TrackNetV3 trains on, and it has a
 **review mode** for verifying the model's own predictions.
 
+### Easiest way: no typing (good for a helper)
+
+Double-click **`Label Ball.bat`** in this folder. A big-button home screen opens — no
+command line, no flags. Pick **"Label a new video"** or **"Fix the computer's guesses,"**
+choose the file in the pop-up, and start clicking. When a clip is done it returns to the
+home screen so you can do another. There's a **"How do I use this?"** page on that screen,
+and a one-page plain-language guide in [`HOW_TO_LABEL.md`](HOW_TO_LABEL.md) you can hand to
+whoever is helping you label. (Running `python label_ball.py` with no arguments opens the
+same home screen.)
+
+The command-line usage below still works and is handy for the dataset-placement options.
+
 ### Setup
 
 It only needs OpenCV and NumPy (both already in the TrackNetV3 / phase1 environment):
