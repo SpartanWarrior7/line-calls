@@ -1,0 +1,49 @@
+{
+  "video": "C:\\Users\\Luke\\OneDrive - 3030 Investors\\Documents\\Claude\\Projects\\Line Calls\\phase1\\line-training-6.mp4",
+  "image_corners_px": [
+    [
+      649.0,
+      622.0
+    ],
+    [
+      1263.0,
+      659.0
+    ],
+    [
+      1038.0,
+      504.0
+    ],
+    [
+      900.0,
+      499.0
+    ]
+  ],
+  "corner_order": [
+    "near-left",
+    "near-right",
+    "far-right",
+    "far-left"
+  ],
+  "homography_pixel_to_court_m": [
+    [
+      -0.005211763124506635,
+      -0.010635386538627356,
+      9.99764469483102
+    ],
+    [
+      -0.0009504487105630361,
+      0.015772311034748788,
+      -9.193536250458337
+    ],
+    [
+      6.774686937256134e-05,
+      -0.0023098671569607783,
+      1.0
+    ]
+  ],
+  "court_dimensions_m": {
+    "length": 23.77,
+    "width": 8.23
+  },
+  "calibration_frame_index": 0
+}

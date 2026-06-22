@@ -1,0 +1,13 @@
+{
+  "video": "/sessions/admiring-confident-wozniak/mnt/Line Calls/phase1/line-training-6.mp4",
+  "fps": 30.0,
+  "orig_w": 1920,
+  "orig_h": 1080,
+  "n_frames": 937,
+  "n_windows": 118,
+  "seq_len": 8,
+  "bg_mode": "concat",
+  "w_scaler": 3.75,
+  "h_scaler": 3.75,
+  "next_window": 118
+}

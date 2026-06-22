@@ -1,0 +1,10 @@
+{
+  "video": "line-training-6.mp4",
+  "fps": 30.0,
+  "orig_w": 1920,
+  "orig_h": 1080,
+  "n_frames": 937,
+  "n_windows": 118,
+  "seq_len": 8,
+  "next_window": 39
+}

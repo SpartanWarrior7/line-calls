@@ -1,0 +1,52 @@
+# =============================================================================
+# Line Calls — .gitignore
+#
+# Goal: commit the things that took human effort and are small (code, docs,
+# hand-labeled CSVs, calibration), and keep out anything big or reproducible
+# (videos, extracted frames, model weights, packaged zips, the vendored repo).
+# =============================================================================
+
+# --- Python environment & caches ---
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# --- Video clips (large; store these outside git, e.g. a synced drive) ---
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.m4v
+
+# --- Extracted frames (regenerated from video by label_ball.py on demand) ---
+*_frames/
+
+# --- Packaged training sets & backups (rebuilt by build_finetune_zip.py) ---
+finetune_data*.zip
+*.zip.bak
+*.bak
+
+# --- Model checkpoints (large; downloaded or produced separately) ---
+*.pt
+*.pth
+*.onnx
+
+# --- Vendored upstream repo: a clone of github.com/qaz812345/TrackNetV3 ---
+# It's reproducible with `git clone`, so it stays out of your repo.
+# NOTE: if you've customized any file inside it (e.g. finetune.py), copy that
+# file OUT to a tracked location so this rule doesn't lose your edits.
+TrackNetV3/
+
+# --- Stray / scratch files ---
+ziJF24ID
+
+# =============================================================================
+# Deliberately KEPT (do not ignore): these are small and worth versioning
+#   *.py, *.ipynb, *.md            -> code, notebooks, docs
+#   labeled_data/**/*.csv          -> your hand-labeled ground-truth (the crown jewels)
+#   phase1/court_calibration.json  -> calibration
+#   requirements.txt               -> dependencies
+# =============================================================================

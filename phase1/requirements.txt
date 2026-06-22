@@ -1,0 +1,14 @@
+# Core
+opencv-python>=4.8.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# TrackNetV3 detector
+# CPU build by default. For CUDA, follow https://pytorch.org/get-started/locally/
+# to get a torch wheel matching your CUDA version, e.g.:
+#     pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch>=2.1.0
+torchvision>=0.16.0
+
+# Nice-to-haves
+tqdm>=4.66.0
